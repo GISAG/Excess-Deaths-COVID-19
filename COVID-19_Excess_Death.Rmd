@@ -4,7 +4,7 @@ author: "Panozzo, Kimberly A","Rahman, Ishfaq"
 date: "12/1/2020"
 output: html_document
 ---
-## Created a Folder 'Estimation' in drive C that has all the files and folders from 'Input'
+## Created a Folder 'Estimation' in drive C that has all the files and folders from github 'Estimation' folder
 
 ```{r setup, include=FALSE}
 require(knitr)
