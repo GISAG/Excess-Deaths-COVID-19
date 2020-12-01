@@ -1,7 +1,3 @@
-<p align="center">
-<b> Dashbaord: https://gisag.maps.arcgis.com/apps/opsdashboard/index.html#/3f1a47bafce04c54bebe370b90932748 </b>
-<p align="left">
-  
 # Excess-Deaths-COVID-19
 Monitoring the spread of the emerging Covid-19 pandemic has taken the world by storm. From the initial reports of a novel virus spreading in Wuhan, China, to the Fall of 2020, people around the world have turned to geographic information systems (GIS) and online maps to track its spread. To control the pandemic, scientists have begun to analyze and model the spread of cases to evaluate factors which may influence the rate of growth and predict future spread. Unfortunately, many early Covid-19 cases went undetected due to lack of testing and disparities in access. Additionally, testing rates and efficacy are not consistent across geographies and time. For many reasons, current records of Covid-19 cases represent a biased and considerable under count, negatively impacting predictions and estimates moving forward. We estimate excess deaths using the The CDC National Center for Health Statistics and Provisional Mortality Data and the Provisional COVID-19 Death Counts by Week Ending Data and State to find estimates of excess deaths at a county level.
 
@@ -31,7 +27,7 @@ Unaccounted deaths include all deaths over expected numbers per county and may r
 # Input Data Files - Estimation Folder
 ## 1. prov_
 Archive of downloaded Provisional Death Counts in the United States by County. 
-Link available: We combine all available weekly reports regarding provisional deaths by county into one database. The input data comes from the weekly updated data file provided by the CDC (CDC Provisional Death Counts by State and County)[https://data.cdc.gov/NCHS/Provisional-COVID-19-Death-Counts-in-the-United-St/kn79-hsxy] 
+Link available: We combine all available weekly reports regarding provisional deaths by county into one database. The input data comes from the weekly updated data file provided by the CDC (CDC Provisional Death Counts by State and County) [https://data.cdc.gov/NCHS/Provisional-COVID-19-Death-Counts-in-the-United-St/kn79-hsxy] 
 ## 2.	County_Deaths_2012_2018.csv
 File is derived from a download of county-level national mortality data from 2012-2018. Data is based on death certificates for united states residents where each certificate contains a single underlying cause of death and additional multiple causes. All counties with fewer than 10 deaths are suppressed for privacy purposes. The mortality data is derived from death certificate information which is filed in all fifty states and the District of Columbia. Data is coded by the states and provided to the NCHS through the Vital Statistics Cooperative Program or coded by NCHS from copies of the original death certificates provided to NCHS by the State registration offices. 
 ## 3. 3.	Deaths_byWeek 2015_2020
@@ -40,4 +36,7 @@ File is derived from a download of county-level national mortality data from 201
 Data table which refers to the Date of year and the week number each day refers to
 ## 5. Obs_2019.csv & Obs_2019_Weekly.csv
 Input data tables used to check for accuracy. Data compiled using CDC Provisional Deaths by week and state, and CDC Provisional Mortality by county. 
+
+#Citation
+Panozzo, Kimberly A., Rahman, Md. Ishfaq Ur. Excess Deaths in the United States, A Geographic Approach.(2020, November 30). doi:10.13140/RG.2.2.34504.55046
 
