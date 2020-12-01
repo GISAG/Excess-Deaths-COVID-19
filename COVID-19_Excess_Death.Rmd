@@ -1,0 +1,409 @@
+---
+title: "COVID-19_Excess_Death"
+author: "Panozzo, Kimberly A","Rahman, Ishfaq"
+date: "12/1/2020"
+output: html_document
+---
+## Created a Folder 'Estimation' in drive C that has all the files and folders from 'Input'
+
+```{r setup, include=FALSE}
+require(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+opts_knit$set(root.dir = 'C:\\Estimation')
+```
+
+```{r, prompt=TRUE}
+## load/install packages
+packages<-function(x, repos="http://cran.r-project.org", ...){
+  x<-as.character(match.call()[[2]])
+  if (!require(x,character.only=TRUE)){
+    install.packages(pkgs=x, repos=repos, ...)
+    require(x,character.only=TRUE)
+  }
+}
+```
+
+```{r,warning=FALSE,results='hide',message=FALSE}
+#required packages
+library(dplyr)
+library(modelr)
+library(gdata)
+library(tidyverse)
+library(stringr)
+library (zoo)
+library (purrr)
+library (reshape2)
+library (forecast)
+library(lubridate)
+```
+##Predicting 2019 total deaths by State and comparison between 2019 obs & est
+
+```{r}
+options(scipen = 999)
+options(digits = 4)
+#loading and cleanup of County_Deaths_2012_2018.csv
+
+ct_Deaths_2012_2018 <-read.csv("County_Deaths_2012_2018.csv", header = TRUE)
+
+names(ct_Deaths_2012_2018)[1] <- "State"
+names(ct_Deaths_2012_2018)[2] <- "County"
+names(ct_Deaths_2012_2018)[3] <- "FIPS"
+
+ct_Deaths_2012_2018$County <-gsub(",.*","",ct_Deaths_2012_2018$County)
+ct_Deaths_2012_2018$FIPS <- str_pad(ct_Deaths_2012_2018$FIPS, 5, pad = "0")
+ct_Deaths_2012_2018$ct <- ct_Deaths_2012_2018$County
+
+#clean up and creation of unique 'county_state' join column
+
+ct_Deaths_2012_2018$ct <- toupper(ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$ct <- trimws(ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$ct <- gsub(" ","",ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$ct <- gsub ("CITY","",ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$ct <- gsub ("BOROUGH","",ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$ct <- gsub ("PARISH","",ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$ct <- gsub ("CENSUSAREA","",ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$ct <- gsub ("COUNTY","",ct_Deaths_2012_2018$ct)
+ct_Deaths_2012_2018$st <- state.abb[match(ct_Deaths_2012_2018$State,state.name)]
+ct_Deaths_2012_2018$county_join <- with(ct_Deaths_2012_2018,paste0(ct,"_",st))
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018[-c(11,12)]
+
+#fixing the missing data by replacing it with minimum value per year
+
+ct_Deaths_2012_2018[, "Min"] <- apply(ct_Deaths_2012_2018[, 4:10], 1, min, na.rm = TRUE) 
+
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018 %>% mutate(X2012 = coalesce(X2012,Min))
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018 %>% mutate(X2013 = coalesce(X2013,Min))
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018 %>% mutate(X2014 = coalesce(X2014,Min))
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018 %>% mutate(X2015 = coalesce(X2015,Min))
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018 %>% mutate(X2016 = coalesce(X2016,Min))
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018 %>% mutate(X2017 = coalesce(X2017,Min))
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018 %>% mutate(X2018 = coalesce(X2018,Min))
+       
+names(ct_Deaths_2012_2018)[4] <- "2012"
+names(ct_Deaths_2012_2018)[5] <- "2013"
+names(ct_Deaths_2012_2018)[6] <- "2014"
+names(ct_Deaths_2012_2018)[7] <- "2015"
+names(ct_Deaths_2012_2018)[8] <- "2016"
+names(ct_Deaths_2012_2018)[9] <- "2017"
+names(ct_Deaths_2012_2018)[10] <- "2018"
+
+ct_Deaths_2012_2018 <- ct_Deaths_2012_2018[-c(12)]
+```
+
+```{r}
+#Seasonality calculation for 2019 for validation
+
+Deaths_byWeek2015_2020 <-read.csv("Deaths_byWeek2015_2020.csv", header = TRUE)
+names(Deaths_byWeek2015_2020)[1] <- "State"
+Deaths_byWeek2015_2020 [is.na(Deaths_byWeek2015_2020 )] <- 0
+
+seasonality <- Deaths_byWeek2015_2020 %>%
+  group_by(State) %>%
+  mutate(seasonality = X2019/sum(X2019))
+
+seasonality <- seasonality[-c(3:8)]
+seasonality <- seasonality[ which(seasonality$State!='United States'
+                                        & seasonality$State!="Puerto Rico"), ]
+seasonality$State <- gsub("New York City","New York",seasonality$State)
+seasonality <-    seasonality %>% 
+                  group_by(State, Week) %>% 
+                  summarise_if(is.numeric, funs(sum))
+seasonality$State_id <- state.abb[match(seasonality$State,state.name)]
+seasonality$State_id <- ifelse(seasonality$State=='District of Columbia', paste0('DC'),seasonality$State_id)
+seasonality$state_week <- with(seasonality,paste0(State_id,"_",Week))
+seasonality <- seasonality[-c(4)]
+seasonality$seasonality <- ifelse(seasonality$State=='New York',seasonality$seasonality/2 ,seasonality$seasonality)
+```
+
+```{r}
+#creating the year_vs_death longfrom for 2019
+
+long_form_2012_2018 <- ct_Deaths_2012_2018
+long_form_2012_2018 <- long_form_2012_2018[-c(1,2,11)]
+long_form <- melt(long_form_2012_2018, id="FIPS")
+names(long_form)[2] <- "year"
+names(long_form)[3] <- "death"
+
+#Estimation of 2019 death for validation
+estimated <- long_form %>% group_by(FIPS) %>% do(data.frame(v_hat = forecast(auto.arima(.$death), h=1,level=95)))
+cnty_death_estimated_19 <- left_join(ct_Deaths_2012_2018,estimated, by="FIPS")
+names(cnty_death_estimated_19)[14] <- "pred_19"
+names(cnty_death_estimated_19)[12] <- "2019"
+comp_19 <- aggregate(cnty_death_estimated_19$'2019', by=list(Category=cnty_death_estimated_19$State), FUN=sum)
+names(comp_19)[1] <- "State"
+names(comp_19)[2] <- "est_19"
+```
+
+```{r}
+# 2019 est vs obs at State level
+obs_2019 <- read.csv("obs_2019.csv", header = TRUE)
+names(obs_2019)[1] <- "State"
+
+plot(obs_2019$obs_2019, comp_19$est_19, main = "2019 Death (Obs vs Est)",
+     xlab = "Observed", ylab = "Estimated",
+     pch = 19, frame = FALSE)
+abline(fit<- lm(comp_19$est_19 ~ obs_2019$obs_2019), col = "blue")
+legend("bottomright", bty="n", legend=paste("R2:", format(summary(fit)$adj.r.squared, digits=4)))
+```
+
+```{r}
+##County level (w/ seasonality)
+comp_19_ses <- left_join(seasonality,comp_19,by="State")
+comp_19_ses$est_19_week <- comp_19_ses$est_19*comp_19_ses$seasonality
+comp_19_ses <- comp_19_ses[-c(5)]
+
+obs_2019_weekly <- read.csv("obs_2019_weekly.csv", header = TRUE)
+names(obs_2019_weekly)[1] <- "State"
+
+obs_2019_weekly$State_id <- state.abb[match(obs_2019_weekly$State,state.name)]
+obs_2019_weekly$State_id <- ifelse(obs_2019_weekly$State=='District of Columbia', paste0('DC'),obs_2019_weekly$State_id)
+obs_2019_weekly$state_week <- with(obs_2019_weekly,paste0(State_id,"_",Week))
+
+comp_19_ses_final<- left_join(comp_19_ses,obs_2019_weekly,by="state_week")
+comp_19_ses_final <- comp_19_ses_final[-c(6,7,9)]
+names(comp_19_ses_final)[1] <- "State"
+names(comp_19_ses_final)[2] <- "Week"
+names(comp_19_ses_final)[7] <- "obs_19_week"
+```
+
+```{r}
+# 2019 est vs obs at State level Weekly
+plot(comp_19_ses_final$obs_19_week,comp_19_ses_final$est_19_week, main = "2019 Death (Obs vs Est) Weely",
+     xlab = "Observed", ylab = "Estimated",
+     pch = 19, frame = FALSE)
+abline(fit<- lm(comp_19_ses_final$obs_19_week ~ comp_19_ses_final$est_19_week), col = "red")
+legend("bottomright", bty="n", legend=paste("R2:", format(summary(fit)$adj.r.squared, digits=4)))
+```
+##Predicting 2020 total deaths by State
+```{r}
+#creating the year_vs_death longfrom for 2020
+
+long_form_2012_2018 <- cnty_death_estimated_19
+long_form_2012_2018 <- long_form_2012_2018[-c(1,2,11,13,14)]
+long_form <- melt(long_form_2012_2018, id="FIPS")
+names(long_form)[2] <- "year"
+names(long_form)[3] <- "death"
+```
+
+```{r}
+#Estimation 2020
+
+estimated <- long_form %>% group_by(FIPS) %>% do(data.frame(v_hat = forecast(auto.arima(.$death), h=1,level=95)))
+
+cnty_death_estimated_20 <- left_join(cnty_death_estimated_19,estimated, by="FIPS")
+cnty_death_estimated_20 <- cnty_death_estimated_20[-c(13,16)]
+
+names(cnty_death_estimated_20)[15] <- "pred_20"
+names(cnty_death_estimated_20)[14] <- "mid_20"
+names(cnty_death_estimated_20)[12] <- "mid_19"
+
+#write.csv (cnty_death_estimated_20,'cnty_death_estimated_20.csv',na="")
+```
+
+```{r}
+cnty_death_estimated <- cnty_death_estimated_20[-c(12,14)]
+cnty_death_estimated$FIPS <- as.character(as.factor(cnty_death_estimated$FIPS))
+
+state_sum <- cnty_death_estimated %>% group_by(.$State) %>% summarize_if(is.numeric,sum,na.rm = TRUE)
+
+state_sum <- state_sum[-c(2)]
+names(state_sum)[1] <- "State"
+names(state_sum)[2] <- "sum12"
+names(state_sum)[3] <- "sum13"
+names(state_sum)[4] <- "sum14"
+names(state_sum)[5] <- "sum15"
+names(state_sum)[6] <- "sum16"
+names(state_sum)[7] <- "sum17"
+names(state_sum)[8] <- "sum18"
+names(state_sum)[9] <- "sum19"
+names(state_sum)[10] <- "sum20"
+
+#calculating proportion
+estiamted_base <-left_join(cnty_death_estimated,state_sum, by="State")
+
+estiamted_base$p2012 <- estiamted_base[,4] / estiamted_base[,14] 
+estiamted_base$p2013 <- estiamted_base[,5] / estiamted_base[,15] 
+estiamted_base$p2014 <- estiamted_base[,6] / estiamted_base[,16] 
+estiamted_base$p2015 <- estiamted_base[,7] / estiamted_base[,17] 
+estiamted_base$p2016 <- estiamted_base[,8] / estiamted_base[,18] 
+estiamted_base$p2017 <- estiamted_base[,9] / estiamted_base[,19] 
+estiamted_base$p2018 <- estiamted_base[,10] / estiamted_base[,20] 
+estiamted_base$p2019 <- estiamted_base[,12] / estiamted_base[,21] 
+estiamted_base$p2020 <- estiamted_base[,13] / estiamted_base[,22] 
+
+estiamted_base$prop <- rowMeans(estiamted_base[,22:30], na.rm=TRUE)
+estiamted_base <- estiamted_base[-c(14:30)]
+estiamted_base$count <- "52"
+expanded <- data.frame(FIPS = rep(estiamted_base$FIPS, estiamted_base$count))
+expanded$FIPS <- as.character(as.factor(expanded$FIPS))
+expanded <- expanded %>% group_by(FIPS) %>% mutate(week = row_number())
+expanded$week <- as.numeric(expanded$week)
+
+DOY_week <-read.csv("DOY_week.csv", header = TRUE)
+expanded <- left_join(expanded,DOY_week, by="week")
+expanded$FIPS <- str_pad(expanded$FIPS, 5, pad = "0")
+estiamted_base$FIPS <- str_pad(estiamted_base$FIPS, 5, pad = "0")
+large_estimation <-  left_join(expanded,estiamted_base, by="FIPS")
+large_estimation <- large_estimation[-c(17)]
+large_estimation$state_id <- state.abb[match(large_estimation$State,state.name)]
+large_estimation$state_id  [is.na(large_estimation$state_id)] <- 'DC'
+large_estimation$state_week <- with(large_estimation,paste0(state_id,"_",week))
+```
+
+```{r}
+#Seasonality 2020
+
+Deaths_byWeek2015_2020 <-read.csv("Deaths_byWeek2015_2020.csv", header = TRUE)
+names(Deaths_byWeek2015_2020)[1] <- "State"
+Deaths_byWeek2015_2020 [is.na(Deaths_byWeek2015_2020 )] <- 0
+
+seasonality <- Deaths_byWeek2015_2020 %>%
+  group_by(State) %>%
+  mutate(seasonality = (X2015/sum(X2015)+X2016/sum(X2016)+X2017/sum(X2017)+X2018/sum(X2018)+X2019/sum(X2019))/5)
+seasonality <- seasonality[-c(3:8)]
+seasonality <- seasonality[ which(seasonality$State!='United States'
+                                        & seasonality$State!="Puerto Rico"), ]
+seasonality$State <- gsub("New York City","New York",seasonality$State)
+seasonality <-    seasonality %>% 
+                  group_by(State, Week) %>% 
+                  summarise_if(is.numeric, funs(sum))
+seasonality$State_id <- state.abb[match(seasonality$State,state.name)]
+seasonality$State_id <- ifelse(seasonality$State=='District of Columbia', paste0('DC'),seasonality$State_id)
+seasonality$state_week <- with(seasonality,paste0(State_id,"_",Week))
+seasonality <- seasonality[-c(4)]
+seasonality$seasonality <- ifelse(seasonality$State=='New York',seasonality$seasonality/2 ,seasonality$seasonality)
+```
+
+```{r}
+large_estimation <-  left_join(large_estimation,seasonality, by="state_week")
+names(large_estimation)[4] <- "State"
+large_estimation <- large_estimation[-c(6:12,19)]
+
+#Calculation to get the weekly estimate for expected death per county
+
+large_estimation$weekly_est <- large_estimation$pred_20*large_estimation$seasonality
+write.csv (large_estimation,'large_estimation_weekly.csv',na="")
+```
+
+```{r}
+#county level total death recorded
+##changes between files
+large_estimation <-read.csv("large_estimation_weekly.csv", header = TRUE)
+large_estimation <- large_estimation[-c(1)]
+large_estimation$FIPS <- str_pad(large_estimation$FIPS, 5, pad = "0")
+```
+
+```{r,warning=False}
+##provisional death bigfile
+prov_big <- list.files(path = "C://Estimation//prov_",
+              pattern="*.csv", 
+              full.names = T) %>% 
+              map_df(~read_csv(.))
+names(prov_big)[6] <- "FIPS"
+prov_big$FIPS <- str_pad(prov_big$FIPS, 5, pad = "0")
+prov_big <- prov_big[-c(1,2,4,5)]
+
+large_estimation <-  right_join(prov_big,large_estimation, by="FIPS")
+```
+
+```{r}
+#state level total death recorded
+##changes between files
+###data engineering & preprocessing 
+cdc_st_lvl <- read.csv("https://data.cdc.gov/api/views/muzy-jte6/rows.csv?accessType=DOWNLOAD", header = TRUE)
+cdc_st_lvl <- cdc_st_lvl[-c(6:17,19:34)]
+cdc_st_lvl$All.Cause <- cdc_st_lvl$All.Cause-cdc_st_lvl$COVID.19..U071..Multiple.Cause.of.Death.
+cdc_st_lvl <- cdc_st_lvl[-c(6)]
+
+#cdc_st_lvl_19 <- cdc_st_lvl[ which(cdc_st_lvl$MMWR.Year=='2019'), ]
+cdc_st_lvl_20 <- cdc_st_lvl[ which(cdc_st_lvl$MMWR.Year!='2019'), ]
+cdc_st_lvl_20$Jurisdiction.of.Occurrence <- gsub("New York City","New York",cdc_st_lvl_20$Jurisdiction.of.Occurrence)
+cdc_st_lvl_20$MMWR.Year <- as.factor(as.character(cdc_st_lvl_20$MMWR.Year))
+cdc_st_lvl_20$MMWR.Week <- as.factor(as.character(cdc_st_lvl_20$MMWR.Week))
+cdc_st_lvl_20 <-  cdc_st_lvl_20 %>% 
+                  group_by(Jurisdiction.of.Occurrence, MMWR.Week) %>% 
+                  summarise_if(is.numeric, funs(sum, mean))
+cdc_st_lvl_20 <- cdc_st_lvl_20[ which(cdc_st_lvl_20$Jurisdiction.of.Occurrence!='United States'
+                                      & cdc_st_lvl_20$Jurisdiction.of.Occurrence!="Puerto Rico"), ]
+
+names(cdc_st_lvl_20)[1] <- "state"
+names(cdc_st_lvl_20)[2] <- "week"
+
+cdc_st_lvl_20$state_id <- state.abb[match(cdc_st_lvl_20$state,state.name)]
+cdc_st_lvl_20$state_id   [is.na(cdc_st_lvl_20$state_id )] <- 'DC'
+cdc_st_lvl_20$state_week <- with(cdc_st_lvl_20,paste0(state_id,"_",week))
+cdc_st_lvl_20$week <- as.numeric(as.character(cdc_st_lvl_20$week))
+cdc_st_lvl_20 <- cdc_st_lvl_20 %>% filter(week > 4)
+cdc_st_lvl_20 <- cdc_st_lvl_20[-c(1,2,4,5)]
+cdc_st_lvl_20[is.na(cdc_st_lvl_20)] <- 0
+
+large_estimation <-  right_join(cdc_st_lvl_20,large_estimation, by="state_week")
+names(large_estimation)[1] <- "all_cause"
+write.csv (large_estimation,'large_estimation_allcauses.csv',na="") #for backup
+```
+
+```{r}
+large_estimation <-read.csv("large_estimation_allcauses.csv", header = TRUE)
+large_estimation <- large_estimation[-c(1)]
+large_estimation$Last.week<- as.character(large_estimation$Last.week)
+large_estimation$week_ending<- as.character(large_estimation$week_ending)
+large_estimation$Last.week <- mdy(large_estimation$Last.week)
+large_estimation$Last.week <- as.Date(large_estimation$Last.week)
+large_estimation$week_ending <- mdy(large_estimation$week_ending)
+large_estimation$week_ending <- as.Date(large_estimation$week_ending)
+large_estimation <- large_estimation %>% mutate(p_obs_4week =    ifelse(is.na(Deaths.from.All.Causes),large_estimation$all_cause*large_estimation$prop, NA))
+large_estimation <- large_estimation %>% mutate(p_obs_8week =    ifelse(is.na(Deaths.from.All.Causes),large_estimation$all_cause*large_estimation$prop, NA))
+large_estimation <- large_estimation %>% mutate(p_obs_4week = ifelse(week_ending<(Last.week-28) & (!is.na(Last.week)),
+                                                              large_estimation$all_cause*large_estimation$prop, p_obs_4week))
+large_estimation <- large_estimation %>% mutate(p_obs_8week = ifelse(week_ending<(Last.week-56)& (!is.na(Last.week)), 
+                                                              large_estimation$all_cause *large_estimation$prop, p_obs_4week))
+large_estimation <- large_estimation %>% mutate(p_weeklyest = ifelse(week>4,weekly_est, NA))
+
+large_estimation <- large_estimation %>% mutate(p_weekly_est_4week =  p_weeklyest)
+large_estimation <- large_estimation %>% mutate(p_weekly_est_8week =  p_weeklyest)
+
+# creating two new estimated column (for 4 & 8 week) for excess death computation
+large_estimation <- large_estimation %>% mutate(p_weekly_est_4_pos = ifelse(!is.na(p_obs_4week),p_weekly_est_4week, NA))
+large_estimation <- large_estimation %>% mutate(p_weekly_est_8_pos = ifelse(!is.na(p_obs_8week),p_weekly_est_8week, NA))
+
+large_estimation <- large_estimation[-c(21)]
+```
+##Calculating Excess & Unaccounted Deaths
+```{r}
+#County Total
+large_estimation$FIPS <- str_pad(large_estimation$FIPS, 5, pad = "0")
+large_estimation$p_obs_4week<- as.numeric(large_estimation$p_obs_4week)
+large_estimation$p_obs_8week<- as.numeric(large_estimation$p_obs_8week)
+large_estimation <- large_estimation %>% mutate(Last.week = ifelse((is.na(Last.week)),max(Last.week,na.rm = T), Last.week))
+large_estimation$Last.week <- as.Date(large_estimation$Last.week)
+
+county_total <- large_estimation %>% group_by(Last.week,FIPS) %>% summarise_if(is.numeric, funs(sum),na.rm=T)
+county_total <- county_total[-c(3:12)]
+
+#County excess_death
+excess_death <- large_estimation %>% 
+                group_by(Last.week,FIPS) %>%
+                dplyr::summarise(
+                f_covid = dplyr::first(Deaths.involving.COVID.19),
+                f_death_obs = dplyr::first(Deaths.from.All.Causes)) %>%
+                ungroup()
+excess_death <- left_join(excess_death,county_total,by=c("FIPS","Last.week"))
+excess_death <- excess_death %>% mutate(f_death_obs = ifelse(is.na(f_death_obs),p_obs_4week, f_death_obs))
+
+# Creating a new column "excess" which included both the positive and negative values in any 'abnormal death' numbers
+excess_death$excess <- excess_death$f_death_obs - excess_death$p_weekly_est_4_pos
+excess_death <- excess_death %>% mutate(positive_excess_death = if_else(excess < 0, 0, excess))
+excess_death <- excess_death %>% mutate(negetive_excess_death = if_else(excess > 0, 0, excess))
+excess_death <- excess_death %>% mutate_if(is.numeric, round)
+
+excess_death <- excess_death %>% mutate(unaccounted = if_else(positive_excess_death> f_covid,(positive_excess_death-f_covid), 0))
+
+excess_death_batch <- excess_death[-c(5:8)]
+
+excess_death_m <- melt(excess_death_batch,id=c("FIPS","Last.week"))
+excess_death_batch <- dcast(excess_death_m,FIPS~variable+Last.week)
+
+write.csv (excess_death,'excess_big.csv',na="")
+write.csv (excess_death_batch,'excess_batch.csv',na="")
+```
+
