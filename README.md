@@ -9,14 +9,18 @@ The number of deaths observed per county per week is a proportion of the state t
 To identify observed deaths at all counties, we developed a de-aggregation method to substitute the missing records. 
 ### Proportionality 
 We calculate the proportionality value to deaggregate state totals into the component parts (counties). We simply calculate the proportion of total state deaths which occur within county per week as follows;
-Ps=x_i/(∑_(t=1)^n▒x_it )
+
+![alt text](equations/eq_2.PNG)
+
 where x is the number of deaths at county (i) for each year (t) over the sum of deaths for all counties within its state. The county average is calculated for 6 years (2012 – 2018) and the average county value is used. 
 
 ## Expected Deaths
 The expected weekly mortality estimates are calculated using 2012-2018 county level death observations from NCHS. Expected deaths for 2019 is forecasted in R (using ARIMA maximum likelihood approach) in order to assess accuracy of the model results. Mortality values for 2019 is combined with the historical 2012-2018 data and used to predict the expected number of deaths per week for 2020.
 ### Seasonality 
 When given total mortality counts per county, we calculate the expected number of deaths per week using our seasonality value. This county specifc value is derived by using the weekly observations per county over the number of all deaths per year to determine the average number of deaths which occur per week. The average seasonality value for all years (2012-2018) (Cs) used to estimate the expected number of deaths per week per county. The calculation is as follows;
-Cs=x_it/(∑_(t=1)^n▒x_it )
+
+![alt text](equations/eq_1.PNG)
+
 Where x is the number of deaths at county i over the total deaths for all weeks in the year (n). 
 
 ## Output Variables
