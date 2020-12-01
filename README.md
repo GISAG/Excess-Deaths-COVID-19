@@ -37,6 +37,6 @@ Data table which refers to the Date of year and the week number each day refers 
 ## 5. Obs_2019.csv & Obs_2019_Weekly.csv
 Input data tables used to check for accuracy. Data compiled using CDC Provisional Deaths by week and state, and CDC Provisional Mortality by county. 
 
-#Citation
+# Citation
 Panozzo, Kimberly A., Rahman, Md. Ishfaq Ur. Excess Deaths in the United States, A Geographic Approach.(2020, November 30). doi:10.13140/RG.2.2.34504.55046
 
