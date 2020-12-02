@@ -7,7 +7,7 @@ Monitoring the spread of the emerging Covid-19 pandemic has taken the world by s
 
 # Data
 
-NCHS, National Vital Statistics System Provisional Mortality Data 2015-2020. Used to calculate historical weekly seasonality value (2015-2019), in addition to the 2019 observation and seasonality values (Obs_2019.csv and Os_2019_weekly.csv) used to check accuracy of forcast model. [https://data.cdc.gov/NCHS/Weekly-counts-of-deaths-by-jurisdiction-and-age-gr/y5bj-9g5w]
+NCHS, National Vital Statistics System Provisional Mortality Data 2015-2020. Used to calculate historical weekly seasonality value (2015-2019), in addition to the 2019 observation and seasonality values (Obs_2019.csv and Os_2019_weekly.csv) used to check accuracy of forecast model. [https://data.cdc.gov/NCHS/Weekly-counts-of-deaths-by-jurisdiction-and-age-gr/y5bj-9g5w]
 
 CDC National Center for Health Statistics Mortality Data. The data is used to estimate 2019 and 2020 deaths at the county-level. It is also used to determine the proportionalty value for each county.[https://wonder.cdc.gov/]
 
