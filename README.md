@@ -47,7 +47,7 @@ Input data tables used to check for accuracy. Data compiled using CDC Provisiona
 
 # Citation
 ## Code
-Rahman, Md. Ishfaq Ur Excess Deaths by County (2020, December 1). doi: 10.13140/RG.2.2.10056.34566
+Rahman, Md. Ishfaq Ur., Panozzo, Kimberly A. Excess Deaths by County (2020, December 1). doi: 10.13140/RG.2.2.10056.34566
 ## Methodology and Works
 Panozzo, Kimberly A., Rahman, Md. Ishfaq Ur. Estimation of Excess Deaths During a Global Pandemic. (2020, December 1). 
 Panozzo, Kimberly A., Rahman, Md. Ishfaq Ur. Excess Deaths in the United States, A Geographic Approach.(2020, November 30). doi:10.13140/RG.2.2.34504.55046
