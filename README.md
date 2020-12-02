@@ -57,7 +57,7 @@ The input file is derived from a download of county-level national mortality dat
 ## 3. 3.	Deaths_byWeek 2015_2020
 The input data is derived from the CDC WONDER online database which provides weekly data on the number of deaths from all causes by jurisdiction and week with age group. Age groups are combined in the file. 
 ## 4. DOY_Week.csv
-Dreference table for obtaining the week number corisponding to the 'week-end-date' provided with the CDC MMWR data. 
+The reference table for obtaining the week number which corresponds to the 'week-end-date' provided with the CDC MMWR data.
 ## 5. Obs_2019.csv & Obs_2019_Weekly.csv
 Input data tables created using the CDC Excess Deaths file and used to check for accuracy. Data compiled using CDC Provisional Deaths by week and state, and CDC Provisional Mortality by county. 
 
