@@ -1,5 +1,5 @@
 <p align="center">
-<b>Dashbaord: https://gisag.maps.arcgis.com/apps/opsdashboard/index.html#/3f1a47bafce04c54bebe370b90932748</b>
+<b>Dashbaord: https://arcg.is/05jD4K0 </b>
 <p align="left">
  
 # Excess-Deaths-COVID-19
