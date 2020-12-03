@@ -1,5 +1,5 @@
 <p align="center">
-<b>Dashbaord: https://arcg.is/05jD4K0 Feature Layer: https://gisag.maps.arcgis.com/home/item.html?id=c4aca79c3c504011bc13a7dc02a72580#overview </b>
+<b>Dashbaord: https://arcg.is/05jD4K0 </b>
 <p align="left">
  
 # Excess-Deaths-COVID-19
