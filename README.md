@@ -1,5 +1,5 @@
 <p align="center">
-<b>Dashbaord: https://arcg.is/05jD4K0 </b>
+<b>Dashboard: https://arcg.is/05jD4K0 </b>
 <p align="left">
  
 # Excess-Deaths-COVID-19
