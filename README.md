@@ -70,3 +70,6 @@ Panozzo, Kimberly A., Rahman, Md. Ishfaq Ur. Estimation of Excess Deaths During 
 Panozzo, Kimberly A., Rahman, Md. Ishfaq Ur. Excess Deaths in the United States, A Geographic Approach.(2020, November 30). doi:10.13140/RG.2.2.34504.55046
 
 
+# Disclaimer
+The methods provided here is part of an onoging investigation into identifying excess death spatially. The results derived therein is priliminary and subject to change based on new data/ findings and model optimization. 
+
