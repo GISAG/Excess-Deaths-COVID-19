@@ -201,8 +201,8 @@ write.csv (cnty_death_estimated_20,'cnty_death_estimated_20.csv',na="")
 ```
 
 ```{r}
-#cnty_death_estimated <-read.csv("cnty_death_estimated_20.csv", header = TRUE)
-#cnty_death_estimated <- cnty_death_estimated[-c(1)]
+cnty_death_estimated_20 <-read.csv("cnty_death_estimated_20.csv", header = TRUE)
+cnty_death_estimated_20 <- cnty_death_estimated_20[-c(1)]
 cnty_death_estimated <- cnty_death_estimated_20[-c(12,14)]
 cnty_death_estimated$FIPS <- as.character(as.factor(cnty_death_estimated$FIPS))
 
@@ -231,8 +231,13 @@ estiamted_base$p2017 <- estiamted_base[,9] / estiamted_base[,19]
 estiamted_base$p2018 <- estiamted_base[,10] / estiamted_base[,20] 
 estiamted_base$p2019 <- estiamted_base[,12] / estiamted_base[,21] 
 estiamted_base$p2020 <- estiamted_base[,13] / estiamted_base[,22] 
-
 estiamted_base$prop <- rowMeans(estiamted_base[,23:31], na.rm=TRUE)
+
+##Check_1
+check_proportion <- estiamted_base[-c(14:31)]
+write.csv (check_proportion,paste0('check_proportion_',Sys.Date(),'.csv'),na="")
+
+## County, satate proportation
 estiamted_base <- estiamted_base[-c(14:31)]
 estiamted_base$count <- "52"
 expanded <- data.frame(FIPS = rep(estiamted_base$FIPS, estiamted_base$count))
@@ -273,6 +278,9 @@ seasonality$State_id <- ifelse(seasonality$State=='District of Columbia', paste0
 seasonality$state_week <- with(seasonality,paste0(State_id,"_",Week))
 seasonality <- seasonality[-c(4)]
 seasonality$seasonality <- ifelse(seasonality$State=='New York',seasonality$seasonality/2 ,seasonality$seasonality)
+
+##check_2
+write.csv (seasonality,paste0('check_sesonality_',Sys.Date(),'.csv'),na="")
 ```
 
 ```{r}
@@ -341,6 +349,7 @@ cdc_st_lvl_20[is.na(cdc_st_lvl_20)] <- 0
 large_estimation <-  right_join(cdc_st_lvl_20,large_estimation, by="state_week")
 names(large_estimation)[1] <- "all_cause"
 write.csv (large_estimation,'large_estimation_allcauses.csv',na="") #for backup
+##state county all couse
 ```
 
 ```{r}
@@ -368,6 +377,10 @@ large_estimation <- large_estimation %>% mutate(p_weekly_est_4_pos = ifelse(!is.
 large_estimation <- large_estimation %>% mutate(p_weekly_est_8_pos = ifelse(!is.na(p_obs_8week),p_weekly_est_8week, NA))
 
 large_estimation <- large_estimation[-c(21)]
+
+##Check_3
+check_estimation <- large_estimation
+write.csv (check_estimation,paste0('check_estimation_',Sys.Date(),'.csv'),na="")
 ```
 ##Calculating Excess & Unaccounted Deaths
 ```{r}
@@ -391,7 +404,7 @@ excess_death <- large_estimation %>%
 excess_death <- left_join(excess_death,county_total,by=c("FIPS","Last.week"))
 excess_death <- excess_death %>% mutate(f_death_obs = ifelse(is.na(f_death_obs),p_obs_4week, f_death_obs))
 
-# Creating a new column "excess" which included both the positive and negative values in any 'abnormal death' numbers
+#Creating a new column "excess" which included both the positive and negative values in any 'abnormal death' numbers
 excess_death$excess <- excess_death$f_death_obs - excess_death$p_weekly_est_4_pos
 excess_death <- excess_death %>% mutate(positive_excess_death = if_else(excess < 0, 0, excess))
 excess_death <- excess_death %>% mutate(negetive_excess_death = if_else(excess > 0, 0, excess))
