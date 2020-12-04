@@ -4,7 +4,7 @@ author: "Panozzo, Kimberly A","Rahman, Ishfaq"
 date: "12/1/2020"
 output: html_document
 ---
-## Created a Folder 'Estimation' in drive C that has all the files and folders from github 'Estimation' folder
+## Created a Folder 'Estimation' in drive C that has all the files and folders from 'Input'
 
 ```{r setup, include=FALSE}
 require(knitr)
@@ -197,16 +197,17 @@ names(cnty_death_estimated_20)[15] <- "pred_20"
 names(cnty_death_estimated_20)[14] <- "mid_20"
 names(cnty_death_estimated_20)[12] <- "mid_19"
 
-#write.csv (cnty_death_estimated_20,'cnty_death_estimated_20.csv',na="")
+write.csv (cnty_death_estimated_20,'cnty_death_estimated_20.csv',na="")
 ```
 
 ```{r}
+#cnty_death_estimated <-read.csv("cnty_death_estimated_20.csv", header = TRUE)
+#cnty_death_estimated <- cnty_death_estimated[-c(1)]
 cnty_death_estimated <- cnty_death_estimated_20[-c(12,14)]
 cnty_death_estimated$FIPS <- as.character(as.factor(cnty_death_estimated$FIPS))
 
 state_sum <- cnty_death_estimated %>% group_by(.$State) %>% summarize_if(is.numeric,sum,na.rm = TRUE)
 
-state_sum <- state_sum[-c(2)]
 names(state_sum)[1] <- "State"
 names(state_sum)[2] <- "sum12"
 names(state_sum)[3] <- "sum13"
@@ -231,8 +232,8 @@ estiamted_base$p2018 <- estiamted_base[,10] / estiamted_base[,20]
 estiamted_base$p2019 <- estiamted_base[,12] / estiamted_base[,21] 
 estiamted_base$p2020 <- estiamted_base[,13] / estiamted_base[,22] 
 
-estiamted_base$prop <- rowMeans(estiamted_base[,22:30], na.rm=TRUE)
-estiamted_base <- estiamted_base[-c(14:30)]
+estiamted_base$prop <- rowMeans(estiamted_base[,23:31], na.rm=TRUE)
+estiamted_base <- estiamted_base[-c(14:31)]
 estiamted_base$count <- "52"
 expanded <- data.frame(FIPS = rep(estiamted_base$FIPS, estiamted_base$count))
 expanded$FIPS <- as.character(as.factor(expanded$FIPS))
@@ -356,7 +357,7 @@ large_estimation <- large_estimation %>% mutate(p_obs_8week =    ifelse(is.na(De
 large_estimation <- large_estimation %>% mutate(p_obs_4week = ifelse(week_ending<(Last.week-28) & (!is.na(Last.week)),
                                                               large_estimation$all_cause*large_estimation$prop, p_obs_4week))
 large_estimation <- large_estimation %>% mutate(p_obs_8week = ifelse(week_ending<(Last.week-56)& (!is.na(Last.week)), 
-                                                              large_estimation$all_cause *large_estimation$prop, p_obs_4week))
+                                                              large_estimation$all_cause *large_estimation$prop, p_obs_8week))
 large_estimation <- large_estimation %>% mutate(p_weeklyest = ifelse(week>4,weekly_est, NA))
 
 large_estimation <- large_estimation %>% mutate(p_weekly_est_4week =  p_weeklyest)
