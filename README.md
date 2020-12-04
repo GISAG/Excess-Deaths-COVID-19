@@ -71,5 +71,5 @@ Panozzo, Kimberly A., Rahman, Md. Ishfaq Ur. Excess Deaths in the United States,
 
 
 # Disclaimer
-The methods provided here is part of an onoging investigation into identifying 2020 excess death spatially. The results derived therein is priliminary and subject to change based on new data/ findings and model optimization. 
+The methods provided here is part of an onging investigation into identifying 2020 excess death spatially. The results derived therein is priliminary and subject to change based on new data/ findings and model optimization. 
 
